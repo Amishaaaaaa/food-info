@@ -33,10 +33,13 @@ const food_items = [
         "nutrients": ["omega_3", "protein", "vitamin_d", "calories"],
         "healthy": "Moderately Healthy"
       }
-  ]
+]
+
+app.use(express.json());
 
 let food = []
 app.get("/", function(req, res) {
+    food = []
     for(let i = 0; i < food_items.length; i++) {
         food.push(food_items[i].name);
     }
@@ -44,6 +47,54 @@ app.get("/", function(req, res) {
     res.json({
         food
     })
+})
+
+app.post("/", function(req, res) {
+    const NAME = req.body.NAME;
+    const NUTRIENTS = req.body.NUTRIENTS;
+    const HEALTHY = req.body.HEALTHY;
+    food_items.push({
+        name: NAME,
+        nutrients: NUTRIENTS,
+        healthy: HEALTHY
+    })
+
+    res.json({
+        msg: "New food item added!"
+        
+    })
+})
+
+app.put("/", function(req, res) {
+    let { NAME, NUTRIENTS, HEALTHY } = req.body;
+    for(let i = 0; i < food_items.length; i++) {
+        if (NAME == food_items[i].name) {
+            food_items[i].name = NAME;
+            food_items[i].nutrients = NUTRIENTS;
+            food_items[i].healthy = HEALTHY;
+        }
+    }
+    res.json({msgg: "updated the required field"});
+    console.log(food_items);
+})
+
+app.delete("/", function(req, res) {
+    let NAME = req.body.NAME;
+    for(let i = 0; i < food_items.length; i++) {
+        if (NAME == food_items[i].name) {
+            const index = food_items.findIndex(item => item.name === NAME);
+            if (index !== -1) {
+                food_items.splice(index, 1); 
+                res.json({
+                    msg: `Food item '${NAME}' deleted`
+                  });
+            } 
+        } else {
+            res.status(404).json({
+                error: `Food item '${NAME}' not found`
+            });
+        }
+    }
 })
 
 app.listen(3000);
