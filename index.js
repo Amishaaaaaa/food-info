@@ -1,6 +1,9 @@
 const express = require("express");
-
+const zod = require("zod");
 const app = express();
+
+const schema_name_healthy = zod.string();
+const schema_nutrients = zod.array(zod.string())
 
 const food_items = [
     {
@@ -60,20 +63,25 @@ app.get("/", calculateRequests, function(req, res) {
 })
 
 app.post("/", calculateRequests, function(req, res) {
-    const NAME = req.body.NAME;
-    const NUTRIENTS = req.body.NUTRIENTS;
-    const HEALTHY = req.body.HEALTHY;
+    const inputName = req.body.NAME;
+    const NAME = schema_name_healthy.safeParse(inputName)
+
+    const inputNutrients = req.body.NUTRIENTS;
+    const NUTRIENTS = schema_nutrients.safeParse(inputNutrients)
+
+    const inputHealthy = req.body.HEALTHY;
+    const HEALTHY = schema_name_healthy.safeParse(inputHealthy)
     
-    if(!NAME && !NUTRIENTS && !HEALTHY) {
+    if(!NAME.success || !NUTRIENTS.success || !HEALTHY.success) {
         res.json({
-            msg: "Give some input"
+            msg: "invalid input"
         })
     }
     else {
         food_items.push({
-            name: NAME,
-            nutrients: NUTRIENTS,
-            healthy: HEALTHY
+            name: inputName,
+            nutrients: inputNutrients,
+            healthy: inputHealthy
         })
     
         res.json({
@@ -85,42 +93,58 @@ app.post("/", calculateRequests, function(req, res) {
 })
 
 app.put("/", calculateRequests, function(req, res) {
-    let { NAME, NUTRIENTS, HEALTHY } = req.body;
+    const inputName = req.body.NAME;
+    const NAME = schema_name_healthy.safeParse(inputName);
 
-    if(!NAME && !NUTRIENTS && !HEALTHY) {
+    const inputNutrients = req.body.NUTRIENTS;
+    const NUTRIENTS = schema_nutrients.safeParse(inputNutrients);
+
+    const inputHealthy = req.body.HEALTHY;
+    const HEALTHY = schema_name_healthy.safeParse(inputHealthy);
+    let found = 0;
+    if(!NAME.success && !NUTRIENTS.success && !HEALTHY.success) {
         res.json({
-            msg: "give input for update"
+            msg: "invalid input"
         })
     }
     else {
         for(let i = 0; i < food_items.length; i++) {
-            if (NAME == food_items[i].name) {
-                food_items[i].name = NAME;
-                food_items[i].nutrients = NUTRIENTS;
-                food_items[i].healthy = HEALTHY;
+            if (inputName == food_items[i].name) {
+                found = 1;
+                food_items[i].name = inputName;
+                food_items[i].nutrients = inputNutrients;
+                food_items[i].healthy = inputHealthy;
+                
             }
         }
-        res.json({msgg: "updated the required field"});
-        console.log(food_items);
+        if (found == 1) {
+            res.json({msgg: "updated the required field"});
+                console.log(food_items);
+        } else {
+            res.json({
+                msg: "item not found"
+            })
+        }
     }
 })
 
 app.delete("/", calculateRequests, function(req, res) {
-    let NAME = req.body.NAME;
-    if (!NAME) {
+    let inputName = req.body.NAME;
+    const NAME = schema_name_healthy.safeParse(inputName);
+    if (!NAME.success) {
         res.json({
-            msg: "enter item to be deleted"
+            msg: "enter valid item"
         })
     }
     let itemFound = false;
 
     for(let i = 0; i < food_items.length; i++) {
-        if (NAME == food_items[i].name) {
-            const index = food_items.findIndex(item => item.name === NAME);
+        if (inputName == food_items[i].name) {
+            const index = food_items.findIndex(item => item.name === inputName);
             if (index !== -1) {
                 food_items.splice(index, 1); 
                 res.json({
-                    msg: `Food item '${NAME}' deleted`
+                    msg: `Food item '${inputName}' deleted`
                   });
                   itemFound = true;
             } 
@@ -129,7 +153,7 @@ app.delete("/", calculateRequests, function(req, res) {
 
     if (!itemFound) {
         res.status(404).json({
-            error: `Food item '${NAME}' not found`
+            error: `Food item '${inputName}' not found`
         });
     }
 })
