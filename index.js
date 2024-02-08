@@ -1,10 +1,16 @@
+//requirements
 const express = require("express");
 const zod = require("zod");
+
+//express app initialize
 const app = express();
 
+//zod schema defined
 const schema_name_healthy = zod.string();
 const schema_nutrients = zod.array(zod.string())
 
+
+//data
 const food_items = [
     {
         "name": "Apple",
@@ -38,16 +44,20 @@ const food_items = [
       }
 ]
 
-app.use(express.json());    //middleware
+//middleware (for getting json input from body)
+app.use(express.json());    
 
-let numberOfRequests = 0;
+
 //middlewares
+let numberOfRequests = 0;
 function calculateRequests(req, res, next) {
     numberOfRequests++;
     console.log("Total requests till now: ",numberOfRequests);
     next();
 }
 
+
+//get route
 let food = []
 app.get("/", calculateRequests, function(req, res) {
     food = []
@@ -62,6 +72,7 @@ app.get("/", calculateRequests, function(req, res) {
     })
 })
 
+//post route
 app.post("/", calculateRequests, function(req, res) {
     const inputName = req.body.NAME;
     const NAME = schema_name_healthy.safeParse(inputName)
@@ -72,11 +83,14 @@ app.post("/", calculateRequests, function(req, res) {
     const inputHealthy = req.body.HEALTHY;
     const HEALTHY = schema_name_healthy.safeParse(inputHealthy)
     
+    //wrong input values handling
     if(!NAME.success || !NUTRIENTS.success || !HEALTHY.success) {
         res.json({
             msg: "invalid input"
         })
     }
+
+    //inserting food item
     else {
         food_items.push({
             name: inputName,
@@ -92,6 +106,7 @@ app.post("/", calculateRequests, function(req, res) {
     
 })
 
+//put route
 app.put("/", calculateRequests, function(req, res) {
     const inputName = req.body.NAME;
     const NAME = schema_name_healthy.safeParse(inputName);
@@ -102,11 +117,15 @@ app.put("/", calculateRequests, function(req, res) {
     const inputHealthy = req.body.HEALTHY;
     const HEALTHY = schema_name_healthy.safeParse(inputHealthy);
     let found = 0;
+
+    //wrong input values handling
     if(!NAME.success && !NUTRIENTS.success && !HEALTHY.success) {
         res.json({
             msg: "invalid input"
         })
     }
+
+    //updation
     else {
         for(let i = 0; i < food_items.length; i++) {
             if (inputName == food_items[i].name) {
@@ -128,16 +147,20 @@ app.put("/", calculateRequests, function(req, res) {
     }
 })
 
+//delete route
 app.delete("/", calculateRequests, function(req, res) {
     let inputName = req.body.NAME;
     const NAME = schema_name_healthy.safeParse(inputName);
+
+    // for wrong input (anything other than string)
     if (!NAME.success) {
         res.json({
             msg: "enter valid item"
         })
     }
-    let itemFound = false;
 
+    // deletion of fooditem
+    let itemFound = false;
     for(let i = 0; i < food_items.length; i++) {
         if (inputName == food_items[i].name) {
             const index = food_items.findIndex(item => item.name === inputName);
@@ -151,6 +174,7 @@ app.delete("/", calculateRequests, function(req, res) {
         }
     }
 
+    //if item not found
     if (!itemFound) {
         res.status(404).json({
             error: `Food item '${inputName}' not found`
@@ -158,9 +182,10 @@ app.delete("/", calculateRequests, function(req, res) {
     }
 })
 
-let errcount = 0;
+
 //global catches
 //error handling middleware
+let errcount = 0;
 app.use(function(err, req, res, next) {
     errcount++;
     console.log("error count till now: ",errcount);
@@ -169,4 +194,6 @@ app.use(function(err, req, res, next) {
     })
 })
 
+
+//app listening on port 3000
 app.listen(3000);
