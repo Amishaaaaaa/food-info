@@ -1,6 +1,7 @@
 //requirements
 const express = require("express");
 const zod = require("zod");
+const { userExists, generateToken,authenticateUser} = require("./authorization");
 
 //express app initialize
 const app = express();
@@ -56,6 +57,22 @@ function calculateRequests(req, res, next) {
     next();
 }
 
+//post for generating token if user exists
+app.post("/signin", function (req, res) {
+    const username = req.body.username;
+    const password = req.body.password;
+
+    if (!userExists(username, password)) {
+        return res.status(403).json({
+            msg: "user doesn't exist",
+        });
+    }
+    const token = generateToken(username);
+    return res.json({
+        token,
+    });
+});
+
 
 //get route
 let food = []
@@ -73,7 +90,7 @@ app.get("/", calculateRequests, function(req, res) {
 })
 
 //post route
-app.post("/", calculateRequests, function(req, res) {
+app.post("/", authenticateUser, calculateRequests, function(req, res) {
     const inputName = req.body.NAME;
     const NAME = schema_name_healthy.safeParse(inputName)
 
@@ -107,7 +124,7 @@ app.post("/", calculateRequests, function(req, res) {
 })
 
 //put route
-app.put("/", calculateRequests, function(req, res) {
+app.put("/", authenticateUser, calculateRequests, function(req, res) {
     const inputName = req.body.NAME;
     const NAME = schema_name_healthy.safeParse(inputName);
 
@@ -148,7 +165,7 @@ app.put("/", calculateRequests, function(req, res) {
 })
 
 //delete route
-app.delete("/", calculateRequests, function(req, res) {
+app.delete("/", authenticateUser, calculateRequests, function(req, res) {
     let inputName = req.body.NAME;
     const NAME = schema_name_healthy.safeParse(inputName);
 
@@ -196,4 +213,7 @@ app.use(function(err, req, res, next) {
 
 
 //app listening on port 3000
-app.listen(3000);
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`server listening on port ${PORT}`)
+});
