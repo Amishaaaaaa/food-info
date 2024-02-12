@@ -23,21 +23,31 @@ function calculateRequests(req, res, next) {
     next();
 }
 
-//post for generating token if user exists
-app.post("/signin", function (req, res) {
-    const username = req.body.username;
-    const password = req.body.password;
 
-    if (!userExists(username, password)) {
-        return res.status(403).json({
-            msg: "user doesn't exist",
-        });
+app.post("/signin", async function (req, res, next) {
+  const username = req.body.username;
+  const password = req.body.password;
+  console.log("getting in signin: ");
+try {
+    if (!(await userExists(username, password))) {
+      const error = new Error("User doesn't exist");
+      error.status = 403;
+      throw error;  // Use throw instead of next
     }
+
     const token = generateToken(username);
     return res.json({
-        token,
+      token,
     });
+  } catch (error) {
+    if (!res.headersSent) { // Check if headers have been sent
+      res.status(error.status || 500).json({
+        error: error.message || "Internal Server Error",
+      });
+    }
+  }
 });
+
 
 
 //get route
@@ -166,20 +176,22 @@ app.delete("/", authenticateUser, calculateRequests, function(req, res) {
 })
 
 
-//global catches
-//error handling middleware
+// global catches
+// error handling middleware
 let errcount = 0;
 app.use(function(err, req, res, next) {
     errcount++;
     console.log("error count till now: ",errcount);
-    res.json({
-        msg: "Something's wrong"
-    })
+    const status = err.status || 500;
+    console.log("error me ghus gaya: ");
+    res.status(status).json({
+        msg: err.msg || "Something's wrong",
+    });
 })
 
 
 //app listening on port 3000
-const PORT = 3000;
+const PORT = 3001;
 app.listen(PORT, () => {
     console.log(`server listening on port ${PORT}`)
 });
