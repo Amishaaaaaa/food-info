@@ -14,6 +14,15 @@ const schema_nutrients = zod.array(zod.string())
 //middleware (for getting json input from body)
 app.use(express.json());    
 
+//
+// Middleware to handle CORS headers
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Set this to the appropriate origin in a production environment
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
+});
+//
 
 //middlewares
 let numberOfRequests = 0;
@@ -60,9 +69,7 @@ app.get("/", calculateRequests, function(req, res) {
         totalFoodItems = i+1;
     }
 
-    res.json({
-        food, totalFoodItems
-    })
+    res.send(food),200
 })
 
 //post route
